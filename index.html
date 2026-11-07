@@ -2,6 +2,7 @@
 <!-- Public homepage copy. Core app unchanged; see public/README.md. -->
 <html lang="en">
 <head>
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GraphForge — OI Graph Editor</title>
@@ -13777,6 +13778,66 @@ exporter.downloadHTML = function (app, opts) {
   });
 })();
 
+</script>
+
+<script data-public-guard>
+(function () {
+  'use strict';
+  window.GraphForgePublic = {
+    storage: 'browser-local',
+    serverAutosave: false,
+    storageKey: 'graphforge.workspace.v1',
+    exportBeforeExit: true
+  };
+  var baseline = null;
+  var armed = false;
+  function fingerprint(app) {
+    var s = app.snapshot();
+    return JSON.stringify({
+      graph: s.graph,
+      input: s.input,
+      traversal: s.traversal,
+      showTraversal: s.showTraversal,
+      startNode: s.startNode,
+      bfsDir: s.bfsDir
+    });
+  }
+  function setBaseline(app) {
+    baseline = fingerprint(app);
+    armed = true;
+  }
+  function hook() {
+    var app = window.OIGraph && window.OIGraph.app;
+    if (!app) { setTimeout(hook, 80); return; }
+    if (app.__publicLocalGuard) return;
+    app.__publicLocalGuard = true;
+    /* Do not treat the initial sample/layout/fit as unsaved work. Arm the
+     * baseline on the first real interaction, then warn on later changes. */
+    ['pointerdown', 'keydown', 'input', 'change', 'drop'].forEach(function (type) {
+      document.addEventListener(type, function () {
+        if (!armed) { armed = true; baseline = fingerprint(app); }
+      }, true);
+    });
+    var originalExport = app.exportProject;
+    app.exportProject = function () {
+      var result = originalExport.apply(this, arguments);
+      var status = document.getElementById('project-status');
+      if (!status || status.classList.contains('ok')) setBaseline(app);
+      return result;
+    };
+    window.addEventListener('beforeunload', function (e) {
+      if (!app.store || !app.store.nodes.length || baseline == null) return;
+      if (fingerprint(app) === baseline) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(hook, 0); });
+  } else {
+    setTimeout(hook, 0);
+  }
+})();
 </script>
 </body>
 </html>
