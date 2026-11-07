@@ -1,5 +1,5 @@
 # MysteryPSD.github.io
-At present, I put GraphForge, an AI-generated graph editor for algorithm competitions here.
+At present, I put GraphForge, an AI-generated graph editor for algorithm competitions here. Here's the main README file.
 # GraphForge · OI Graph Editor
 
 An offline graph editor for competitive-programming (OI) graph problems. Open `index.html` directly, or use the single-file distribution `GraphForge.html` (all CSS/JS inlined; double-click to run).
